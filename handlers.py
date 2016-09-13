@@ -321,8 +321,6 @@ class BlogDetailPageHandler(AppHandler):
 
             if liked:
                 liked = True
-        print "=================="
-        # print comments[0].author.get().name
         print user.name
         if not post:
             self.error(404)
@@ -338,7 +336,6 @@ class BlogDetailPageHandler(AppHandler):
         print user
         print author
         if self.request.get("like"):
-            print "like ================================="
             if post and user:
                 post.likes += 1
                 like = Likes(post_id=post.key,
@@ -367,6 +364,7 @@ class BlogDetailPageHandler(AppHandler):
 
 
 class EditBlogHandler(AppHandler):
+    """ editing the blog using blog id"""
     def get(self, post_id):
         post = Post.get_by_id(int(post_id))
         post_title = post.title
@@ -398,6 +396,7 @@ class EditBlogHandler(AppHandler):
 
 
 class DeleteBlogHandler(AppHandler):
+    """deleting the blog handler using blog id"""
     def get(self, post_id):
         post = Post.get_by_id(int(post_id))
         context = {'post_title': post.title, 'post_tag': post.tag,
@@ -413,10 +412,8 @@ class DeleteBlogHandler(AppHandler):
 class EditCommentHandler(AppHandler):
     """Handles commment editing"""
     def get(self, comment_id):
-        print "called ye= ============================="
         user = self.get_current_user()
         if user:
-            print "jkdsfaa;lkjdsfldskjf;lasdjf;lkjdsaf"
             comment = Comment.get_by_id(int(comment_id))
             print comment.key.id()
             comment_text = comment.text
@@ -459,5 +456,6 @@ class DeleteCommentHandler(AppHandler):
 
 
 class AboutUsHandler(AppHandler):
+    """renders about us page """
     def get(self):
         self.render('aboutus.html')
