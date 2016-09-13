@@ -322,8 +322,8 @@ class BlogDetailPageHandler(AppHandler):
             if liked:
                 liked = True
         print "=================="
-        print comments[1].author
-        print user.key
+        # print comments[0].author.get().name
+        print user.name
         if not post:
             self.error(404)
             return
@@ -413,36 +413,51 @@ class DeleteBlogHandler(AppHandler):
 class EditCommentHandler(AppHandler):
     """Handles commment editing"""
     def get(self, comment_id):
+        print "called ye= ============================="
+        user = self.get_current_user()
         if user:
+            print "jkdsfaa;lkjdsfldskjf;lasdjf;lkjdsaf"
             comment = Comment.get_by_id(int(comment_id))
+            print comment.key.id()
             comment_text = comment.text
+            post_id = comment.post_id
             context = {'comment_text': comment.text,
                        'comment_author': comment.author}
-            self.render('post_detail.html', context=context, comment=comment)
+            self.render('edit_comment.html', context=context, comment=comment)
 
     def post(self, comment_id):
         comment = Comment.get_by_id(int(comment_id))
         comment_text = self.request.get("comment_text")
         if comment_text:
             comment.text = comment_text
+            post_id = comment.post_id
             comment.put()
+            self.redirect('/post/%s' % post_id.id())
         else:
             error = "Enter the text to edit!!"
-            self.render('post_detail.html', error=error)
+            self.render('edit_comment.html', error=error)
 
 
 class DeleteCommentHandler(AppHandler):
     """Handles commment editing"""
     def get(self, comment_id):
+        user = self.get_current_user()
         if user:
             comment = Comment.get_by_id(int(comment_id))
-            Key = comment.key
+            # Key = comment.key
+            print comment
             context = {'comment_text': comment.text,
                        'comment_author': comment.author}
-            self.render('delete_comment.html', context=context)
+            self.render('delete_comment.html', context=context,
+                        comment=comment)
 
     def post(self, comment_id):
         comment = Comment.get_by_id(int(comment_id))
         post_id = comment.post_id
         comment.key.delete()
-        self.redirect('/post/%s' % post_id)
+        self.redirect('/post/%s' % post_id.id())
+
+
+class AboutUsHandler(AppHandler):
+    def get(self):
+        self.render('aboutus.html')

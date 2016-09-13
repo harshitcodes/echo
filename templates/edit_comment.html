@@ -1,13 +1,13 @@
 {% extends 'base.html' %}
-{% block pagetitle %} Echo | Delete Comment {% endblock %}
+{% block pagetitle %} Echo | Edit Comment {% endblock %}
 
 {% include 'nav_bar.html' %}
 
 {% block content %}
 
     <div class="container">
-        <h4>Are you sure?</h4>
-        <form class="form-horizontal" method="post" action="/post/comment/{{comment.key.id()}}/delete">
+        <h4>Edit your comment</h4>
+        <form class="form-horizontal" method="post" action="/post/comment/{{comment.key.id()}}/edit">
           <div class="form-group">
             <div class="col-sm-10">
                 <textarea class="form-control" name='comment_text' rows="5" placeholder="Comment!" id="comment">{{context['comment_text']}}</textarea>
@@ -15,11 +15,10 @@
           </div>
           <div class="form-group">
             <div class="col-sm-2">
-              <button type="submit" class="btn btn-default">Confirm Delete</button>
+              <button type="submit" class="btn btn-default">Edit</button>
             </div>
           </div>
         </form>
     </div>
-
 
 {% endblock %}

@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% block pagetitle %} Echo | Welcome {% endblock %}
+{% block pagetitle %} Echo | Post {% endblock %}
 
 {% include 'nav_bar.html' %}
 
@@ -12,10 +12,10 @@
 
             </div>
             {% if user.key == post.user %}
-            <div class="col-sm-4">
+            <div class="col-sm-1">
                 <a href = "/edit_post/{{post.key.id()}}" ><button class="btn">Edit</button></a>
             </div>
-            <div class="col-sm-4">
+            <div class="col-sm-1">
                 <a href = "/delete_post/{{post.key.id()}}" ><button class="btn">Delete</button></a>
             </div>
             {% endif %}
@@ -49,15 +49,19 @@
               <button type="submit" class="btn btn-default">Push</button>
             </div>
           </div>
-        </form>
-
+        </form><br>
+        <hr style="border: 1px solid #00796b">
         {% for msg in comments %}
         <div class="row">
             <div class="col-sm-offset-1 col-sm-10">
             <h4>{{msg.author.get().name}}</h4>
             <p>{{msg.text}}
             {% if msg.author == user.key %}
-                <span><i class="icon-edit"></i><i class="icon-trash"></i></span><br>
+                <span>
+                <a href="/post/comment/{{msg.key.id()}}/edit"><i class="icon-edit">
+                </i></a>
+                <a href="/post/comment/{{msg.key.id()}}/delete"><i class="icon-trash"></i>
+                </span><br>
             {% endif %}
             </p>
             </div>
