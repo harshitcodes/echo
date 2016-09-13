@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+{% block pagetitle %} Echo | Welcome {% endblock %}
+
+{% block content %}
+
+    <div class="container">
+        <h1>Login to continue</h1>
+        <ul>
+          {% if validation_error %}
+            <li>{{validation_error }}
+            {% elif field_error %}
+            <li>{{field_error}}</li>
+          {% endif %}
+        </ul>
+        <form class="form-horizontal" method="post" action="/login">
+
+          <div class="form-group">
+            <label for="inputEmail3" class="col-sm-2 control-label">Email</label>
+            <div class="col-sm-10">
+              <input type="email" class="form-control" value="{{email}}" name="email" id="inputEmail3" placeholder="Email">
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="inputPassword3" class="col-sm-2 control-label">Password</label>
+            <div class="col-sm-10">
+              <input type="password" class="form-control" name="password" id="passwd" placeholder="Password">
+            </div>
+          </div>
+          <div class="form-group">
+            <div class="col-sm-offset-2 col-sm-10">
+              <button type="submit" class="btn btn-default">Sign In</button>
+            </div>
+          </div>
+        </form>
+    </div>
+
+{% endblock %}
