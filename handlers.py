@@ -8,7 +8,7 @@ import hashlib
 import hmac
 import time
 from google.appengine.ext import ndb
-# import all the models
+
 from models import *
 from urls import *
 
@@ -339,11 +339,12 @@ class BlogDetailPageHandler(AppHandler):
             authorization_error = "You need to login to view the BlogPost"  # noqa
             self.render('login.html', authorization_error=authorization_error)
 
+
+class LikeUnlikeHandler(AppHandler):
     def post(self, post_id):
-        post = Post.get_by_id(int(post_id))
-        author = post.user
         user = self.get_current_user()
-        if user:
+        post = Post.get_by_id(int(post_id))
+        if user and user.key != post.user:
             if self.request.get("like"):
                 if post and user:
                     post.likes += 1
@@ -352,7 +353,7 @@ class BlogDetailPageHandler(AppHandler):
                     like.put()
                     post.put()
                 self.redirect("/home")
-            elif self.request.get("unlike"):
+            if self.request.get("unlike"):
                 if post and user:
                     post.likes -= 1
                     like = Likes.query(ndb.AND(post.key == Likes.post_id,
@@ -361,15 +362,30 @@ class BlogDetailPageHandler(AppHandler):
                     key.delete()
                     post.put()
                 self.redirect("/home")
+        else:
+            authorization_error = "You need to login like or comment on the BlogPost"  # noqa
+            self.render('login.html', authorization_error=authorization_error)
+
+
+class CommentHandler(AppHandler):
+    # def get(self):
+    #     user = self.get_current_user()
+    #     post = Post.get_by_id(int(post_id))
+    #     if user:
+    #         self.render('')
+
+    def post(self, post_id):
+        post = Post.get_by_id(int(post_id))
+        user = self.get_current_user()
+        if user:
+            text = self.request.get('comment_text')
+            if text:
+                comment = Comment(text=str(text), author=user.key,
+                                  post_id=post.key)
+                comment.put()
+                self.redirect('/post/%s' % post_id)
             else:
-                text = self.request.get('comment_text')
-                if text:
-                    comment = Comment(text=str(text), author=user.key,
-                                      post_id=post.key)
-                    comment.put()
-                    self.redirect('/post/%s' % post_id)
-                else:
-                    self.render('post_detail.html', post=post)
+                self.render('post_detail.html', post=post)
         else:
             authorization_error = "You need to login like or comment on the BlogPost"  # noqa
             self.render('login.html', authorization_error=authorization_error)
@@ -390,7 +406,7 @@ class EditBlogHandler(AppHandler):
             self.render('edit_blog.html', user=user, post=post,
                         context=context)
         else:
-            aauthorization_error = "You need to login to edit the BlogPost"
+            authorization_error = "You need to login to edit the BlogPost"
             self.render('login.html', authorization_error=authorization_error)
 
     def post(self, post_id):
