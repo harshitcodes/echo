@@ -12,6 +12,11 @@
             <li>{{field_error}}</li>
           {% endif %}
         </ul>
+        {% if authorization_error %}
+        <ul>
+          <li style="color: red;">{{authorization_error}}</li>
+        </ul>
+        {% endif %}
         <form class="form-horizontal" method="post" action="/login">
 
           <div class="form-group">

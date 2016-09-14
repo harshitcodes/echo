@@ -1,7 +1,6 @@
 {% extends 'base.html' %}
 {% block pagetitle %} Echo | Welcome {% endblock %}
 
-{% include 'nav_bar.html' %}
 
 {% block content %}
 
@@ -16,7 +15,11 @@
             </div>
         </div><br>
 
-
+        {% if authorization_error %}
+        <ul>
+            <li style="color : red"> {{authirization_error}}</li>
+        </ul>
+        {% endif %}
         <div class= "row">
         {% for post in posts %}
             <a href="/post/{{post.key.id()}}">

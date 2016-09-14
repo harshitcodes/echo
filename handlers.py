@@ -133,7 +133,6 @@ class MainPageHandler(AppHandler):
 
 class SignUpHandler(AppHandler):
     def get(self):
-        print "aayaya yyaya"
         self.render("signup.html")
 
     def post(self):
@@ -214,7 +213,8 @@ class LoginHandler(AppHandler):
         if user:
             self.render("home.html")
         else:
-            self.render("login.html")
+            error = "You need to login to browse through the home page!"
+            self.render("login.html", error=error)
 
     def post(self):
         has_error = False
@@ -262,12 +262,17 @@ class LoginHandler(AppHandler):
 class HomeHandler(AppHandler):
     def get(self):
         user = self.get_current_user()
-        posts = Post.query().order(-Post.created)
-        context = {'posts': posts,
-                   'user': user}
-        for i in posts:
-            print i.key.id()
-        self.render('home.html', user=user, posts=posts)
+        if user:
+
+            posts = Post.query().order(-Post.created)
+            context = {'posts': posts,
+                       'user': user}
+            for i in posts:
+                print i.key.id()
+            self.render('home.html', user=user, posts=posts)
+        else:
+            authorization_error = "You need to login to view the content"  # noqa
+            self.render('login.html', authorization_error=authorization_error)
 
 
 class LogoutHandler(AppHandler):
@@ -281,32 +286,35 @@ class LogoutHandler(AppHandler):
 class CreatePostHandler(AppHandler):
     """Handler for creating new posts """
     def get(self):
-        user_email = check_valid_cookie(self)
-        if user_email:
-            user = User.query(user_email == User.email).get()
+        user = user = self.get_current_user()
+        if user:
             self.render('create.html', user=user)
         else:
-            self.redirect('/login')
+            authorization_error = "You need to login to create the BlogPost"  # noqa
+            self.render('login.html', authorization_error=authorization_error)
 
     def post(self):
         user = self.get_current_user()
         post_title = self.request.get('title')
         post_content = self.request.get('content')
         post_tag = self.request.get('tag')
-
-        if post_title and post_content:
-            new_post = Post(
-                title=post_title,
-                content=post_content,
-                tag=post_tag,
-                user=user.key)
-            post_key = new_post.put()
-            self.redirect('/home')
+        if user:
+            if post_title and post_content:
+                new_post = Post(
+                    title=post_title,
+                    content=post_content,
+                    tag=post_tag,
+                    user=user.key)
+                post_key = new_post.put()
+                self.redirect('/home')
+            else:
+                error = "Both title and content fields are mandatory!"
+                self.render('create.html', post_title=post_title,
+                            post_content=post_content,
+                            error=error)
         else:
-            error = "Both title and content fields are mandatory!"
-            self.render('create.html', post_title=post_title,
-                        post_content=post_content,
-                        error=error)
+            authorization_error = "You need to login to create the BlogPost"  # noqa
+            self.render('login.html', authorization_error=authorization_error)
 
 
 class BlogDetailPageHandler(AppHandler):
@@ -321,118 +329,151 @@ class BlogDetailPageHandler(AppHandler):
 
             if liked:
                 liked = True
-        print user.name
-        if not post:
-            self.error(404)
-            return
-        # print user.key
-        self.render('post_detail.html', user=user, post=post,
-                    liked=liked, comments=comments)
+            if not post:
+                self.error(404)
+                return
+            # print user.key
+            self.render('post_detail.html', user=user, post=post,
+                        liked=liked, comments=comments)
+        else:
+            authorization_error = "You need to login to view the BlogPost"  # noqa
+            self.render('login.html', authorization_error=authorization_error)
 
     def post(self, post_id):
         post = Post.get_by_id(int(post_id))
         author = post.user
         user = self.get_current_user()
-        print user
-        print author
-        if self.request.get("like"):
-            if post and user:
-                post.likes += 1
-                like = Likes(post_id=post.key,
-                             author=user.key)
-                like.put()
-                post.put()
-            self.redirect("/home")
-        elif self.request.get("unlike"):
-            if post and user:
-                post.likes -= 1
-                like = Likes.query(ndb.AND(post.key == Likes.post_id,
-                                   user.key == Likes.author)).get()
-                key = like.key
-                key.delete()
-                post.put()
-            self.redirect("/home")
-        else:
-            text = self.request.get('comment_text')
-            if text:
-                comment = Comment(text=str(text), author=user.key,
-                                  post_id=post.key)
-                comment.put()
-                self.redirect('/post/%s' % post_id)
+        if user:
+            if self.request.get("like"):
+                if post and user:
+                    post.likes += 1
+                    like = Likes(post_id=post.key,
+                                 author=user.key)
+                    like.put()
+                    post.put()
+                self.redirect("/home")
+            elif self.request.get("unlike"):
+                if post and user:
+                    post.likes -= 1
+                    like = Likes.query(ndb.AND(post.key == Likes.post_id,
+                                       user.key == Likes.author)).get()
+                    key = like.key
+                    key.delete()
+                    post.put()
+                self.redirect("/home")
             else:
-                self.render('post_detail.html', post=post)
+                text = self.request.get('comment_text')
+                if text:
+                    comment = Comment(text=str(text), author=user.key,
+                                      post_id=post.key)
+                    comment.put()
+                    self.redirect('/post/%s' % post_id)
+                else:
+                    self.render('post_detail.html', post=post)
+        else:
+            authorization_error = "You need to login like or comment on the BlogPost"  # noqa
+            self.render('login.html', authorization_error=authorization_error)
 
 
 class EditBlogHandler(AppHandler):
     """ editing the blog using blog id"""
     def get(self, post_id):
-        post = Post.get_by_id(int(post_id))
-        post_title = post.title
-        post_content = post.content
-        post_tag = post.tag
         user = self.get_current_user()
-        context = {'post_title': post_title, 'post_tag': post_tag,
-                   'post_content': post_content}
-        self.render('edit_blog.html', user=user, post=post, context=context)
-
-    def post(self, post_id):
-        post = Post.get_by_id(int(post_id))
-        post_title = self.request.get('title')
-        post_tag = self.request.get('tag')
-        post_content = self.request.get('content')
-
-        if post_title and post_tag and post_content:
-            post.title = post_title
-            post.tag = post_tag
-            post.content = post_content
-            post.put()
-            self.redirect("/post/%s" % post.key.id())
-        else:
+        if user and user.key == post.user:
+            post = Post.get_by_id(int(post_id))
+            post_title = post.title
+            post_content = post.content
+            post_tag = post.tag
+            user = self.get_current_user()
             context = {'post_title': post_title, 'post_tag': post_tag,
                        'post_content': post_content}
-            error = "All the fields are mandatory"
-            self.render("edit_blog.html", post=post, error=error,
+            self.render('edit_blog.html', user=user, post=post,
                         context=context)
+        else:
+            aauthorization_error = "You need to login to edit the BlogPost"
+            self.render('login.html', authorization_error=authorization_error)
+
+    def post(self, post_id):
+        user = self.get_current_user()
+        post = Post.get_by_id(int(post_id))
+        if user and user.key == post.user:
+            post_title = self.request.get('title')
+            post_tag = self.request.get('tag')
+            post_content = self.request.get('content')
+
+            if post_title and post_tag and post_content:
+                post.title = post_title
+                post.tag = post_tag
+                post.content = post_content
+                post.put()
+                self.redirect("/post/%s" % post.key.id())
+            else:
+                context = {'post_title': post_title, 'post_tag': post_tag,
+                           'post_content': post_content}
+                error = "All the fields are mandatory"
+                self.render("edit_blog.html", post=post, error=error,
+                            context=context)
+        else:
+            authorization_error = "You need to login to edit the BlogPost"
+            self.render('login.html', authorization_error=authorization_error)
 
 
 class DeleteBlogHandler(AppHandler):
     """deleting the blog handler using blog id"""
     def get(self, post_id):
-        post = Post.get_by_id(int(post_id))
-        context = {'post_title': post.title, 'post_tag': post.tag,
-                   'post_content': post.content}
-        self.render('delete_blog.html', post=post, context=context)
+        user = self.get_current_user()
+        if user and user.key == post.user:
+            post = Post.get_by_id(int(post_id))
+            context = {'post_title': post.title, 'post_tag': post.tag,
+                       'post_content': post.content}
+            self.render('delete_blog.html', post=post, context=context)
+        else:
+            authorization_error = "You don't have the access to delete the blog"  # noqa
+            self.render('login.html', authorization_error=authorization_error)
 
     def post(self, post_id):
+        user = self.get_current_user()
         post = Post.get_by_id(int(post_id))
-        post.key.delete()
-        self.redirect('/home')
+        if user and user.key == post.user:
+            post.key.delete()
+            self.redirect('/home')
+        else:
+            authorization_error = "You don't have the access to delete the blog"  # noqa
+            self.render('login.html', authorization_error=authorization_error)
 
 
 class EditCommentHandler(AppHandler):
     """Handles commment editing"""
     def get(self, comment_id):
         user = self.get_current_user()
-        if user:
-            comment = Comment.get_by_id(int(comment_id))
+        comment = Comment.get_by_id(int(comment_id))
+        if user and user.key == comment.author:
             print comment.key.id()
             comment_text = comment.text
             post_id = comment.post_id
             context = {'comment_text': comment.text,
                        'comment_author': comment.author}
             self.render('edit_comment.html', context=context, comment=comment)
+        else:
+            authorization_error = "You don't have the access to edit the comment"  # noqa
+            self.render('post_detail.html', authorization_error=authorization_error)
 
     def post(self, comment_id):
         comment = Comment.get_by_id(int(comment_id))
         comment_text = self.request.get("comment_text")
-        if comment_text:
-            comment.text = comment_text
-            post_id = comment.post_id
-            comment.put()
-            self.redirect('/post/%s' % post_id.id())
+        user = self.get_current_user()
+        if user and user.key == comment.author:
+            if comment_text:
+                comment.text = comment_text
+                post_id = comment.post_id
+                comment.put()
+                self.redirect('/post/%s' % post_id.id())
+            else:
+                error = "Enter the text to edit!!"
+                self.render('edit_comment.html', error=error)
         else:
-            error = "Enter the text to edit!!"
-            self.render('edit_comment.html', error=error)
+            authorization_error = "You don't have the access to edit the comment"  # noqa
+            self.render('login.html', authorization_error=authorization_error)
 
 
 class DeleteCommentHandler(AppHandler):
@@ -447,12 +488,20 @@ class DeleteCommentHandler(AppHandler):
                        'comment_author': comment.author}
             self.render('delete_comment.html', context=context,
                         comment=comment)
+        else:
+            authorization_error = "You don't have the access to delete the comment"  # noqa
+            self.render('login.html', authorization_error=authorization_error)
 
     def post(self, comment_id):
+        user = self.get_current_user()
         comment = Comment.get_by_id(int(comment_id))
-        post_id = comment.post_id
-        comment.key.delete()
-        self.redirect('/post/%s' % post_id.id())
+        if user and user.key == comment.author:
+            post_id = comment.post_id
+            comment.key.delete()
+            self.redirect('/post/%s' % post_id.id())
+        else:
+            authorization_error = "You don't have the access to delete the comment"  # noqa
+            self.render('login.html', authorization_error=authorization_error)
 
 
 class AboutUsHandler(AppHandler):
